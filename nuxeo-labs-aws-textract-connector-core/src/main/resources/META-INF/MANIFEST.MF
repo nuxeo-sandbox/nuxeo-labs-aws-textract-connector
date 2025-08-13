@@ -1,0 +1,9 @@
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .
+Manifest-Version: 1.0
+Bundle-Vendor: org.nuxeo.labs.aws.textract
+Bundle-Version: 1.0.0
+Bundle-Name: nuxeo-labs-aws-textract-connector-core
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: org.nuxeo.labs.aws.textract.nuxeo-labs-aws-textract-connector-core;singleton=true
+Nuxeo-Component: OSGI-INF/operations-contrib.xml
