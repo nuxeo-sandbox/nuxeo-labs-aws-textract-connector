@@ -7,7 +7,7 @@ Notice Nuxeo already extracts the text of PDFs that are text)based. The advantag
 > [!IMPORTANT]
 > In this first implementation, the plugin calls Textract _synchronously_, which means it can handle only single-page documents (see AWS Textract documentation).
 >
-> The `Textract.Analyze` operation will extract every page of a multi-page PDF and send them one by one to the service, concatenating the result. This is a workaround waiting for someone to implement the asynchnous call: Pull requests are very welcome :-).
+> The operations will extract every page of a multi-page PDF and send them one by one to the service, concatenating the result. This is a workaround waiting for someone to implement the asynchnous call: Pull requests are very welcome :-).
 >
 > The ultimate goal is to call the asynchronous API passing it the references to the S3 Object stored by Nuxeo. Notice the plugin already does that when it detects the document has only one page, and this step should be tuned to handle S3BlobProvider, S3BlobStore to get the blob key, etc. Agin: Pull requests are welcome
 
@@ -15,6 +15,7 @@ Notice Nuxeo already extracts the text of PDFs that are text)based. The advantag
 > [!IMPORTANT]
 > For multi-page PDF documents, the file is downloaded and each page is extracted and sent to the service, whatever the storage.
 
+See example(s) [here](/README-JS-Automation-Examples.md)
 
 <br>
 
@@ -75,6 +76,7 @@ Sends the blob at `blobXPath` to Textract DetectDocumentText API.
   * When `returnRawJson` is `true`, it returns a JSON array as string, with each element corresponding to the raw JSON as returned by the service for the page.
     * This means WARNING: Each element of the array will state it is page #1
 
+See [example](/README-JS-Automation-Examples.md).
 <br>
 
 
