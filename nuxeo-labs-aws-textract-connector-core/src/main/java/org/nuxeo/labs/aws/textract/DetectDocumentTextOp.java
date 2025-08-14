@@ -19,14 +19,19 @@
 package org.nuxeo.labs.aws.textract;
 
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
 import org.nuxeo.ecm.automation.core.annotations.Param;
+import org.nuxeo.ecm.automation.core.util.BlobList;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+
+import com.amazonaws.services.textract.model.DetectDocumentTextResult;
 
 /**
  *
@@ -72,8 +77,13 @@ public class DetectDocumentTextOp {
     @OperationMethod
     public DocumentModel run(DocumentModel doc) {
 
-        Blob b = (Blob) doc.getPropertyValue(blobXPath);
-        String digest = b.getDigest();
+        Blob blob = (Blob) doc.getPropertyValue(blobXPath);
+
+        int pages = 1;
+        BlobList blobList = TextractUtils.splitPDFIfMoreThanOnePage(blob);
+        if (blobList != null) {
+            pages = blobList.size();
+        }
 
         TextractService service = null;
         if (StringUtils.isNoneBlank(bucket, bucketPrefix, region)) {
@@ -82,11 +92,42 @@ public class DetectDocumentTextOp {
             service = TextractService.getInstance();
         }
 
-        String result;
-        if (returnRawJson) {
-            result = service.detectDocumentTextGetRawResultJsonString(digest);
+        String result = null;
+        TextractUtils.Granularity correctGranularity = TextractUtils.Granularity.valueOf(granularity);
+        if (pages == 1) {
+            if (returnRawJson) {
+                result = service.detectDocumentTextGetRawResultJsonString(blob);
+            } else {
+                result = service.detectDocumentTextGetText(correctGranularity, blob);
+            }
         } else {
-            result = service.detectDocumentTextGetText(TextractUtils.Granularity.valueOf(granularity), digest);
+            if (returnRawJson) {
+                JSONArray finalJson = new JSONArray();
+                for (Blob oneBlob : blobList) {
+                    DetectDocumentTextResult analyzeResult = service.detectDocumentText(oneBlob);
+
+                    JSONObject obj = new JSONObject(analyzeResult);
+                    finalJson.put(obj);
+                }
+
+                result = finalJson.toString();
+
+                // Cleanup now
+                TextractUtils.deleteFilesSilently(blobList);
+                blobList = null;
+
+            } else {
+                result = "";
+                for (Blob oneBlob : blobList) {
+                    DetectDocumentTextResult analyzeResult = service.detectDocumentText(oneBlob);
+                    String onePageResult = TextractUtils.getAllTextJoined(analyzeResult::getBlocks, correctGranularity,
+                            "\n");
+                    result += "/n" + onePageResult;
+                }
+
+                // Remove duplicates
+                result = TextractUtils.removeDuplicates(result, "\n");
+            }
         }
 
         doc.setPropertyValue(resultXPath, result);

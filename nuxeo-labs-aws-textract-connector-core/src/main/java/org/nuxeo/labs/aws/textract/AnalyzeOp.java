@@ -19,9 +19,7 @@
 package org.nuxeo.labs.aws.textract;
 
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -36,8 +34,6 @@ import org.nuxeo.ecm.automation.core.util.BlobList;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.platform.pdf.PDFInfo;
-import org.nuxeo.ecm.platform.pdf.PDFPageExtractor;
 
 import com.amazonaws.services.textract.model.AnalyzeDocumentResult;
 
@@ -90,23 +86,11 @@ public class AnalyzeOp {
     public DocumentModel run(DocumentModel doc) {
 
         Blob blob = (Blob) doc.getPropertyValue(blobXPath);
-        String digest = blob.getDigest();
 
-        String mimeType = blob.getMimeType();
         int pages = 1;
-
-        BlobList blobList = new BlobList();
-        if ("application/pdf".equals(mimeType)) {
-            PDFInfo pdfInfo = new PDFInfo(blob);
-            pdfInfo.run();
-            pages = pdfInfo.getNumberOfPages();
-            if (pages > 1) {
-                PDFPageExtractor pe = new PDFPageExtractor(blob);
-                for (int i = 1; i <= pages; i++) {
-                    Blob onePage = pe.extract(i, i);
-                    blobList.add(onePage);
-                }
-            }
+        BlobList blobList = TextractUtils.splitPDFIfMoreThanOnePage(blob);
+        if(blobList != null) {
+            pages = blobList.size();
         }
 
         List<String> featuresList = null;
@@ -128,9 +112,9 @@ public class AnalyzeOp {
         TextractUtils.Granularity correctGranularity = TextractUtils.Granularity.valueOf(granularity);
         if (pages == 1) {
             if (returnRawJson) {
-                result = service.analyzeGetRawResultJsonString(featuresList, digest);
+                result = service.analyzeGetRawResultJsonString(featuresList, blob);
             } else {
-                result = service.analyzeGetText(correctGranularity, featuresList, digest);
+                result = service.analyzeGetText(correctGranularity, featuresList, blob);
             }
         } else {
             if (returnRawJson) {
@@ -145,15 +129,8 @@ public class AnalyzeOp {
                 result = finalJson.toString();
 
                 // Cleanup now
-                try {
-                    for (Blob oneBlob : blobList) {
-                        oneBlob.getFile().delete();
-                    }
-                } catch (Exception e) {
-                    // Ignore
-                } finally {
-                    blobList = null;
-                }
+                TextractUtils.deleteFilesSilently(blobList);
+                blobList = null;
 
             } else {
                 result = "";
@@ -163,13 +140,9 @@ public class AnalyzeOp {
                             "\n");
                     result += "/n" + onePageResult;
                 }
-                
+
                 // Remove duplicates
-                Set<String> seen = new LinkedHashSet<>();
-                result = Arrays.stream(result.split("\\R"))
-                                      .filter(line -> seen.add(line.toLowerCase()))
-                                      .collect(Collectors.joining("\n"));
-            }
+                result = TextractUtils.removeDuplicates(result, "\n");            }
         }
 
         doc.setPropertyValue(resultXPath, result);

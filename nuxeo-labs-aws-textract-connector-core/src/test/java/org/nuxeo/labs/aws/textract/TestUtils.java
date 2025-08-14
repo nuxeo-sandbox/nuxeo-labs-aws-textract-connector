@@ -19,6 +19,9 @@
 package org.nuxeo.labs.aws.textract;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nuxeo.ecm.core.blob.BlobInfo;
+import org.nuxeo.ecm.core.blob.ManagedBlob;
+import org.nuxeo.ecm.core.blob.SimpleManagedBlob;
 
 /**
  * @since TODO
@@ -37,6 +40,20 @@ public class TestUtils {
     
     public static boolean hasTestEnvVariables() {
         return StringUtils.isNoneBlank(BUCKET, BUCKET_PREFIX, REGION, DIGEST);
+    }
+    
+    public static ManagedBlob createFakeS3Blob(String digest) {
+
+        // Fake a S3 blob (TestUtils.DIGEST is supposed to be S3 blob)
+        BlobInfo blobInfo = new BlobInfo();
+        blobInfo.key = "s3:" + digest;
+        blobInfo.digest = digest;
+        ;
+        blobInfo.filename = "somefile.pdf";
+        blobInfo.mimeType = "application/pdf";
+        ManagedBlob blob = new SimpleManagedBlob(blobInfo);
+
+        return blob;
     }
 
 }

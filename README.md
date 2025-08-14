@@ -48,8 +48,8 @@ Analyze the file using the _synchronous_ Textract API (see limitation in this ca
 
 Sends the blob at `blobXPath` to Textract Analyze API.
 
-* If the blob is a single-page document then WARNING: The plugin assume it is stored in a S3 bucket. If it is not the case, it will fail.
-* If the blob is a pdf and has multiple pages, the plugin sends each page one by one and concatenate the results.
+* If the blob is a single-page document and is stored in a S3 bucket (via the Nuxeo S3BinaryManager), it is sent as-is (more precisely, a reference to the S3 object is used by Textract, saving time). Else, the blob is sent => check size limitation of the Textract service (max 5MB at the time of this writing)
+* If the blob is a pdf _and_ has multiple pages, the plugin sends each page one by one and concatenate the results.
   * When `returnRawJson` is `false`, the plugin also cleans up duplicates. Each WORD or LINE is separated from the next with e linefeed.
   * When `returnRawJson` is `true`, it returns a JSON array as string, with each element correspondiung to the raw JSON as returned by the service for the page.
     * This means WARNING: Each element of the array will state it is page #1
@@ -68,11 +68,14 @@ Sends the blob at `blobXPath` to Textract Analyze API.
   * `granularity`: String, optional. If `returnRawJson` is not passed or is `false`,  this ârameter tells the oprtation to return either the list of "WORD" or of "LINE"
   * `saveDocument`: Boolean, optional, `false` by default. If `true`, the document is saved.
 
+
 Sends the blob at `blobXPath` to Textract DetectDocumentText API.
 
-* If the blob is a single-page document then WARNING: The plugin assume it is stored in a S3 bucket. If it is not the case, it will fail.
-* If the blob is a pdf and has multiple pages, the plugin sends it but DetectDocumentText will only analyze first page
-  * This is a known limitation
+* If the blob is a single-page document and is stored in a S3 bucket (via the Nuxeo S3BinaryManager), it is sent as-is (more precisely, a reference to the S3 object is used by Textract, saving time). Else, the blob is sent => check size limitation of the Textract service (max 5MB at the time of this writing)
+* If the blob is a pdf _and_ has multiple pages, the plugin sends each page one by one and concatenate the results.
+  * When `returnRawJson` is `false`, the plugin also cleans up duplicates. Each WORD or LINE is separated from the next with e linefeed.
+  * When `returnRawJson` is `true`, it returns a JSON array as string, with each element correspondiung to the raw JSON as returned by the service for the page.
+    * This means WARNING: Each element of the array will state it is page #1
 
 <br>
 

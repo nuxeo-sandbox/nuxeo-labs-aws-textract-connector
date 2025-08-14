@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<component name="nuxeo.ldt.parser.test.s3BlobProvider">
+
+  <extension target="org.nuxeo.ecm.core.blob.BlobManager" point="configuration">
+    <blobprovider name="test">
+     <!-- Merging with the "test" provider of S3BlobProviderFeature is done by the feature -->
+      <property name="nocache">true</property>
+    </blobprovider>
+  </extension>
+</component>

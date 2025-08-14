@@ -37,6 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.common.utils.FileUtils;
@@ -114,6 +115,7 @@ public class TestOperations {
     @Test
     public void shouldAnalyzeLocalBlobAndGetJson() throws Exception {
 
+        // We need S3 infos to connect to the textract service
         Assume.assumeTrue("No TEST_TEXTRACT_... env. variables set => ignoring the test",
                 TestUtils.hasTestEnvVariables());
         
@@ -159,7 +161,8 @@ public class TestOperations {
 
     @Test
     public void shouldAnalyzeS3BlobInDocAndGetWords() throws Exception {
-
+        
+        // We need S3 infos to connect to the textract service
         Assume.assumeTrue("No TEST_TEXTRACT_... env. variables set => ignoring the test",
                 TestUtils.hasTestEnvVariables());
 
@@ -196,14 +199,18 @@ public class TestOperations {
 
     }
 
+    // Ignore because  the code requires to deploy providers and all, and the local @Deploy don't work for whatever reason
+    @Ignore
     @Test
+    @Deploy("org.nuxeo.ecm.core.storage.binarymanager.s3")
+    @Deploy("org.nuxeo.ecm.core.storage.binarymanager.s3.tests")
+    @Deploy("org.nuxeo.labs.aws.textract.nuxeo-labs-aws-textract-connector-core:s3-blob-provider.xml")
     public void shouldAnalyzeS3BlobInDocAndGetJson() throws Exception {
 
         Assume.assumeTrue("No TEST_TEXTRACT_... env. variables set => ignoring the test",
                 TestUtils.hasTestEnvVariables());
 
-        Blob b = Blobs.createBlob("whatever");
-        b.setDigest(TestUtils.DIGEST);
+        Blob b = TestUtils.createFakeS3Blob(TestUtils.DIGEST);
 
         DocumentModel doc = session.createDocumentModel("/", "testfile", "File");
         doc.setPropertyValue("file:content", (Serializable) b);

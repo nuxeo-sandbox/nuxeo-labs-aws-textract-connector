@@ -34,6 +34,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.automation.test.AutomationFeature;
+import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
@@ -52,7 +53,7 @@ public class TestTextractService {
     protected CoreSession session;
 
     @Test
-    public void shouldAnalyzeAndGetAll() throws Exception {
+    public void shouldAnalyzeAndGetAllForAS3Blob() throws Exception {
 
         Assume.assumeTrue("No TEST_TEXTRACT_... env. variables set => ignoring the test",
                 TestUtils.hasTestEnvVariables());
@@ -61,8 +62,10 @@ public class TestTextractService {
                 TestUtils.REGION);
         assertNotNull(service);
 
-        List<String> features = List.of("TABLES", "FORMS", "LAYOUT", /*"QUERIES", */"SIGNATURES");
-        String jsonStr = service.analyzeGetRawResultJsonString(features, TestUtils.DIGEST);
+        Blob blob = TestUtils.createFakeS3Blob(TestUtils.DIGEST);
+        service.setForceS3Key(true);
+        List<String> features = List.of("TABLES", "FORMS", "LAYOUT", /* "QUERIES", */"SIGNATURES");
+        String jsonStr = service.analyzeGetRawResultJsonString(features, blob);
         assertNotNull(jsonStr);
 
         // Find our words
@@ -73,7 +76,7 @@ public class TestTextractService {
         for (String word : toFind) {
             assertTrue(words.indexOf(word) > -1);
         }
-        
+
         // Get more
         File file = new File("/Users/thibaud.arguillere/Downloads/file-20.json");
         FileUtils.writeStringToFile(file, jsonStr, StandardCharsets.UTF_8);
@@ -81,7 +84,7 @@ public class TestTextractService {
     }
 
     @Test
-    public void shouldAnalyzeAndGetWords() throws Exception {
+    public void shouldAnalyzeAndGetWordsForAS3Blob() throws Exception {
 
         Assume.assumeTrue("No TEST_TEXTRACT_... env. variables set => ignoring the test",
                 TestUtils.hasTestEnvVariables());
@@ -90,7 +93,8 @@ public class TestTextractService {
                 TestUtils.REGION);
         assertNotNull(service);
 
-        String words = service.analyzeGetText(TextractUtils.Granularity.WORD, null, TestUtils.DIGEST);
+        Blob blob = TestUtils.createFakeS3Blob(TestUtils.DIGEST);
+        String words = service.analyzeGetText(TextractUtils.Granularity.WORD, null, blob);
         assertNotNull(words);
 
         words = words.toLowerCase();
